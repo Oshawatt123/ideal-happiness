@@ -15,4 +15,9 @@ public class R_Collider : MonoBehaviour
     {
         
     }
+
+    public virtual bool CollisionRule(Vector3 CollidingPosition)
+    {
+        return false;
+    }
 }

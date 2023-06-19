@@ -17,6 +17,11 @@ public class R_PlaneCollider : R_Collider
         
     }
 
+    public override bool CollisionRule(Vector3 CollidingPosition) 
+    {
+        return false;
+    }
+
 
     private void OnDrawGizmosSelected()
     {
