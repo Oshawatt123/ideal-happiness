@@ -34,7 +34,7 @@ public class Particle : MonoBehaviour
     public /*const*/ Vector3 GRAVITY = new Vector3(0f, -9.8f, 0f);        // Gravity
     public const float AIRDENSITY = 1.23f; // 1.23kg/m^3 -> measured at sea level on earth at 15C
     public const float COEFFICIENTOFDRAG = 0.47f; // measured result https://en.wikipedia.org/wiki/Drag_coefficient
-    public const float WINDSPEED = 20.0f;                                // idk its whatever we choose, its wind speed
+    public const float WINDSPEED = 4.0f;                                // idk its whatever we choose, its wind speed
     public /*const*/ Vector3 WINDDIRECTION = new Vector3(1f, 0f, 0f);   // ^^  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ^^ direction
     public /*const*/ float GROUND_Y_POSITION = 0f;
 
@@ -44,7 +44,7 @@ public class Particle : MonoBehaviour
     public Vector3 Velocity = Vector3.zero;                     // Velocity
     public float Speed = 0.0f;                                  // Speed (Magnitude of velocity)
     public Vector3 Forces = Vector3.zero;                       // Total force acting on this particle
-    public float Radius = 0.1f;                                 // Radius of the particle
+    public float Radius = 0.5f;                                 // Radius of the particle
 
     // Collision
     private Vector3 PreviousPosition;
@@ -115,7 +115,7 @@ public class Particle : MonoBehaviour
         // Collision Detection
 
         // Ground Check
-        if(transform.position.y <= GROUND_Y_POSITION)
+        if(transform.position.y - Radius <= GROUND_Y_POSITION)
         {
             collisionNormal.x = 0;
             collisionNormal.y = 1;          // ground is static, a flat plane, and we are only interested in collisions from above; we can determine our collision normal as being Y up
@@ -140,12 +140,15 @@ public class Particle : MonoBehaviour
 
                 // calculating our X position is slightly more difficult.
                 // we need to calculate the percentage of the timestep moved in the Y and use that to calculate our new X
-                float percentageOfTimestepMoved = (newPosition.y - PreviousPosition.y) / (newPosition.y - transform.position.y);
+                float totalMove = PreviousPosition.y - transform.position.y;
+                float realMove = PreviousPosition.y - newPosition.y;
+                float percentMoved = realMove / totalMove;
 
-                float calculatedX = (transform.position.y - PreviousPosition.y) * percentageOfTimestepMoved;
+                float xTotalMove = PreviousPosition.x - transform.position.x;
+                float xRealMove = xTotalMove * percentMoved;
+                float calculatedX = PreviousPosition.x + xRealMove;
+
                 newPosition.x = calculatedX;
-
-                newPosition.x = transform.position.x;
 
                 GizmoDrawOptions newPosDrawOptions = new GizmoDrawOptions();
                 newPosDrawOptions.gizmoType = GizmoType.Sphere;
