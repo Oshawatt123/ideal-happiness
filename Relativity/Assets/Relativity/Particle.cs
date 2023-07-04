@@ -27,6 +27,8 @@ public class Particle : MonoBehaviour
     }
     public bool DrawDebugGizmos = false;
     private List<GizmoDrawOptions> GizmosQueue = new List<GizmoDrawOptions>();
+    [SerializeField] private bool bStopForceAfterCollision = false;
+    private bool StopForce = false;
 
     // Globals
     public /*const*/ Vector3 GRAVITY = new Vector3(0f, -9.8f, 0f);        // Gravity
@@ -59,7 +61,7 @@ public class Particle : MonoBehaviour
 
     private void Update()
     {
-        float timeStep = 0.5f;
+        float timeStep = Time.deltaTime;
         // Debug
         if (DrawDebugGizmos)
         {
@@ -127,7 +129,7 @@ public class Particle : MonoBehaviour
             {
                 collisionImpulse = -(relativeVelocityDot) * (CoefficientOfRestitution + 1) * Mass;
                 collisionImpactForce = collisionNormal;
-                collisionImpactForce.Scale(collisionImpactForce / dt); // vector3.scale is vector multiplication
+                collisionImpactForce *= (collisionImpulse / dt);
 
                 ImpactForces += collisionImpactForce;
 
@@ -143,6 +145,8 @@ public class Particle : MonoBehaviour
                 float calculatedX = (transform.position.y - PreviousPosition.y) * percentageOfTimestepMoved;
                 newPosition.x = calculatedX;
 
+                newPosition.x = transform.position.x;
+
                 GizmoDrawOptions newPosDrawOptions = new GizmoDrawOptions();
                 newPosDrawOptions.gizmoType = GizmoType.Sphere;
                 newPosDrawOptions.position = newPosition;
@@ -151,6 +155,13 @@ public class Particle : MonoBehaviour
                 AddGizmoToDraw(newPosDrawOptions);
 
                 transform.position = newPosition;
+                Debug.Log("Relocated to ground plane");
+                Debug.Log("Position" + newPosition.ToString());
+
+                if(bStopForceAfterCollision)
+                {
+                    StopForce = true;
+                }
 
                 return true;
             }
@@ -171,7 +182,14 @@ public class Particle : MonoBehaviour
         if(HasCollided)
         {
             AddForceInternal(ImpactForces);
+            Debug.Log("Collision Force applied. Early return");
             return; // early return on frames when we collide
+        }
+
+        if(StopForce)
+        {
+            Debug.Log("DEBUG MODE ENABLED. NO MORE FORCES APPLIED");
+            return;
         }
 
         // Gravity
@@ -261,6 +279,7 @@ public class Particle : MonoBehaviour
     // Integrate one time step dt
     public void UpdateBodyEuler(float deltaTime)
     {
+        Debug.Log("Applying force");
         // Setup
         Vector3 acceleration = Vector3.zero;
         Vector3 deltaVelocity = Vector3.zero;

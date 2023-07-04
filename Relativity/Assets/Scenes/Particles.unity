@@ -29190,8 +29190,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DrawDebugGizmos: 1
+  bStopForceAfterCollision: 0
   GRAVITY: {x: 0, y: -9.8, z: 0}
-  WINDDIRECTION: {x: 1, y: 0, z: 0}
+  WINDDIRECTION: {x: 0, y: 0, z: 0}
   GROUND_Y_POSITION: 0
   Mass: 1
   Velocity: {x: 0, y: 0, z: 0}
