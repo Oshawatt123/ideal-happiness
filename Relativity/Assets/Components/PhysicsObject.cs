@@ -5,12 +5,14 @@ using UnityEngine;
 
 public class PhysicsObject : MonoBehaviour
 {
-    List<Collider> Colliders = new List<Collider>();
 
-    public bool UseGravity = false;
+    //Vector3 Position; <- handled by Transform.Position
+    Vector3 Velocity;
+    Vector3 Force;
+    [SerializeField]
+    float Mass = 1;
 
-    public Vector3 velocity = Vector3.zero;
-    Vector3 Acceleration = Vector3.zero;
+    List<Vector3> ImpulseForces = new List<Vector3>();
 
     // Start is called before the first frame update
     void Start()
@@ -18,18 +20,33 @@ public class PhysicsObject : MonoBehaviour
         GameObject Manager = GameObject.FindWithTag("PhysManager");
         Manager.GetComponent<PhysicsManager>().Register(this);
 
-        Colliders = GetComponents<Collider>().ToList();
+        //Force += new Vector3(Random.Range(5f, 10f), 49f, 0f); // add random force
+
+        Velocity = new Vector3(Random.Range(15f, 20f), 20f, 0f);
+
+        //Colliders = GetComponents<Collider>().ToList();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        
+        if(Input.GetKeyDown(KeyCode.H))
+        {
+            ApplyImpulseForce(new Vector3(-17f, 0f, 0f));
+        }
     }
 
-    public Vector3 GetVelocity() { return velocity; }
-    public void AddVelocity(Vector3 addVelocity) { velocity += addVelocity; }
+    public Vector3 GetPosition() { return transform.position; }
+    public void SetPosition(Vector3 position) { transform.position = position; }
 
-    public Vector3 GetAcceleration() { return Acceleration; }
-    public void SetAcceleration(Vector3 newAcceleration) { Acceleration = newAcceleration; }
+    public Vector3 GetVelocity() { return Velocity; }
+    public void SetVelocity(Vector3 velocity) { Velocity = velocity; }
+
+    public Vector3 GetForce() { return Force; }
+    public void SetForce(Vector3 force) { Force = force; }
+    public void ApplyForce(Vector3 force) { Force += force; }
+
+    public float GetMass() { return Mass; }
+
+    public List<Vector3> GetImpulseForces() {  return ImpulseForces; }
+    public void ApplyImpulseForce(Vector3 force) {  ImpulseForces.Add(force); }
 }

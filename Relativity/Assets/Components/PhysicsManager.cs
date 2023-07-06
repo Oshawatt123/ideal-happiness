@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -21,46 +22,32 @@ public class PhysicsManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        foreach (PhysicsObject Object in PhysicsObjects)
+        Debug.Log(Time.deltaTime);
+        foreach (PhysicsObject obj in PhysicsObjects)
         {
-            Vector3 ObjectAcceleration = Vector3.zero;
+            // calculate net force this frame
+            obj.SetForce(Vector3.zero);
 
-            // apply gravity
-            if(Object.UseGravity)
+            // apply impulse forces
+            foreach (Vector3 force in obj.GetImpulseForces())
             {
-                ObjectAcceleration += Gravity;
-            }
-            // other external forces like collision etc. would go here
-
-            foreach (PhysicsObject Object2 in PhysicsObjects)
-            {
-                // early out if matching. don't want to collide with ourselves
-                if (Object == Object2)
-                {
-                    continue;
-                }
-
-                // sphere on sphere collision
-                float distance = Vector3.Distance(Object.transform.position, Object2.transform.position);
-                if (distance < Object.GetComponent<SphereCollider>().radius)
-                {
-                    // get collision normal
-                    Vector3 collisionNormal = Object.transform.position - Object2.transform.position;
-                    ObjectAcceleration += collisionNormal* CollisionForce;
-                }
-
+                obj.ApplyForce(force); // THESE ARE FORCES WE ARE APPLYING, NOT ACCELERATIONS. F = MA. THEREFORE NO MASS NEEDED HERE
             }
 
-            // end collision
+            obj.ApplyForce(obj.GetMass() * Gravity); // apply gravity every frame // GRAVITY IS AN ACCELERATION THEREFORE WE TIMES BY MASS. F = MA
 
-            // integrate for velocity
-            Vector3 diffVelocity = ObjectAcceleration * Time.deltaTime;
-            Object.AddVelocity(diffVelocity);
-            // end velocity
+            // -------------- INTEGRATION -------------- //
 
-            // integrate for position
-            Object.transform.position += (Object.GetVelocity() * Time.deltaTime);
-            // end position
+            // semi-implicit euler integration
+            // this calculates new velocity *before* updating position
+            // this is generally more stable at a great range of dt values than explicit euler integration
+            // which performs this the other way around
+
+            // integrate velocity
+            obj.SetVelocity(obj.GetVelocity() + obj.GetForce() * Time.deltaTime);
+
+            // integrate position
+            obj.SetPosition(obj.GetPosition() + obj.GetVelocity() * Time.deltaTime);
         }
     }
 
@@ -68,5 +55,10 @@ public class PhysicsManager : MonoBehaviour
     public void Register(PhysicsObject physicsObject)
     {
         PhysicsObjects.Add(physicsObject);
+    }
+
+    private void OnDrawGizmos()
+    {
+
     }
 }
