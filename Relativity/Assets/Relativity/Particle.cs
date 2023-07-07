@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Particle : MonoBehaviour
 {
@@ -37,6 +39,7 @@ public class Particle : MonoBehaviour
     public const float WINDSPEED = 4.0f;                                // idk its whatever we choose, its wind speed
     public /*const*/ Vector3 WINDDIRECTION = new Vector3(1f, 0f, 0f);   // ^^  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ^^ direction
     public /*const*/ float GROUND_Y_POSITION = 0f;
+    private List<Obstacle> obstacles = new List<Obstacle>();
 
 
     public float Mass = 1.0f;                                   // Mass
@@ -57,6 +60,12 @@ public class Particle : MonoBehaviour
     private void Start()
     {
         GRAVITY.y = GRAVITY.y * Mass; // dont like this too much as gravity is an acceleration not a force but I guess we're saving computation :/
+
+        GameObject[] obstacleObjects = GameObject.FindGameObjectsWithTag("Obstacle");
+        foreach(GameObject obstacleObject in obstacleObjects)
+        {
+            obstacles.Add(obstacleObject.GetComponent<Obstacle>());
+        }
     }
 
     private void Update()
@@ -119,7 +128,7 @@ public class Particle : MonoBehaviour
         {
             collisionNormal.x = 0;
             collisionNormal.y = 1;          // ground is static, a flat plane, and we are only interested in collisions from above; we can determine our collision normal as being Y up
-            relativeVelocity = Velocity;    // ground is static, so relative velocity i just the velocity of the particle
+            relativeVelocity = Velocity;    // ground is static, so relative velocity is just the velocity of the particle
             relativeVelocityDot = Vector3.Dot(relativeVelocity, collisionNormal); // dot product determines how parallel our vector are
 
             // if dot is negative, aka vectors pointing away from each other
@@ -132,6 +141,7 @@ public class Particle : MonoBehaviour
                 collisionImpactForce *= (collisionImpulse / dt);
 
                 ImpactForces += collisionImpactForce;
+                hasCollided = true;
 
                 // reposition particle so that it collides with the ground rather than through it
                 Vector3 newPosition = Vector3.zero;
@@ -166,11 +176,67 @@ public class Particle : MonoBehaviour
                     StopForce = true;
                 }
 
-                return true;
             }
         }
 
-        return false;
+        // Check for collisions with spherical obstacles
+        foreach(Obstacle obstacle in obstacles)
+        {
+            GizmoDrawOptions obstacleCollisionCheck = new GizmoDrawOptions();
+            obstacleCollisionCheck.gizmoType = GizmoType.Line;
+            obstacleCollisionCheck.forceLine = obstacle.transform.position - transform.position;
+            float distance = Vector3.Distance(obstacle.transform.position, transform.position);
+            if (distance < Radius + obstacle.radius)
+            {
+                obstacleCollisionCheck.color = Color.red;
+                // calculate collision normal
+                collisionNormal = transform.position - obstacle.transform.position;
+                collisionNormal.Normalize();
+
+                relativeVelocity = Velocity;    // obstacle is static, so relative velocity is just the velocity of the particle
+                relativeVelocityDot = Vector3.Dot(relativeVelocity, collisionNormal); // dot product determines how parallel our vector are
+
+                // if dot is negative, aka vectors pointing away from each other
+                // aka velocity is opposite to collision normal
+                if (relativeVelocityDot < 0f)
+                {
+                    collisionImpulse = -(relativeVelocityDot) * (CoefficientOfRestitution + 1) * Mass;
+                    collisionImpactForce = collisionNormal;
+                    collisionImpactForce *= (collisionImpulse / dt);
+
+                    ImpactForces += collisionImpactForce;
+                    hasCollided = true;
+
+                    // reposition particle so that it collides with the obstacle rather than through it
+                    Vector3 newPosition = Vector3.zero;
+                    newPosition = obstacle.transform.position + (collisionNormal * (Radius + obstacle.radius));
+
+                    GizmoDrawOptions newPosDrawOptions = new GizmoDrawOptions();
+                    newPosDrawOptions.gizmoType = GizmoType.Sphere;
+                    newPosDrawOptions.position = newPosition;
+                    newPosDrawOptions.color = Color.yellow;
+                    newPosDrawOptions.time = -1;
+                    AddGizmoToDraw(newPosDrawOptions);
+
+                    transform.position = newPosition;
+                    Debug.Log("Relocated to obstacle");
+                    Debug.Log("Position" + newPosition.ToString());
+
+                    if (bStopForceAfterCollision)
+                    {
+                        StopForce = true;
+                    }
+
+                }
+            }
+            else
+            {
+                obstacleCollisionCheck.color = Color.green;
+            }
+            AddGizmoToDraw(obstacleCollisionCheck);
+        }
+
+        return hasCollided;
     }
 
     // Aggregate forces acting on this particle
